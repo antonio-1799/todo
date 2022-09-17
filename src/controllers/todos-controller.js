@@ -5,6 +5,7 @@ import {StatusCodes, TodosStatus} from "../../common/enums.js";
 import {format} from "date-fns";
 import {DEFAULT_LIMIT, DEFAULT_PAGE} from "../../common/constants.js";
 import {ApiResponse} from "../../common/response.js";
+import pagination from "../helpers/pagination.js";
 
 const response = new ApiResponse()
 
@@ -40,7 +41,7 @@ export const readTodos = async (req, res) => {
         const search = req.query.search ?? ''
         let page, limit
 
-        // Initialize page and limit if both are undefined/null
+        // Initialize page and limit
         page = isNaN(Number(req.query.page)) ? DEFAULT_PAGE : Number(req.query.page)
         limit = isNaN(Number(req.query.limit)) ? DEFAULT_LIMIT : Number(req.query.limit)
 
@@ -52,9 +53,7 @@ export const readTodos = async (req, res) => {
                 status: TodosStatus.ACTIVE
             }
         })
-        const excess = todosCount % limit;
-        const maxPage = (todosCount - excess) / limit + (excess > 0 ? 1 : 0);
-        const offset = limit * (page - 1);
+        const { maxPage, offset } = await pagination(todosCount, limit, page)
 
         let todos
         if (!search) {
