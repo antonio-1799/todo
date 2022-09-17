@@ -2,9 +2,9 @@
   "name": "union-digital-exam",
   "version": "1.0.0",
   "description": "TODO application list",
-  "main": "index.js",
+  "main": "src/app.js",
   "scripts": {
-    "start": "nodemon index.js",
+    "start": "nodemon src/app.js",
     "test": "jest"
   },
   "jest": {

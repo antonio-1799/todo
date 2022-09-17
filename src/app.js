@@ -1,8 +1,8 @@
 // Import express
 import express from "express";
 import cors from "cors";
-import db from "./config/db.js";
-import router from "./src/routes/todos-routes.js";
+import db from "../config/db.js";
+import router from "./routes/todos-routes.js";
 import * as dotenv from 'dotenv'
 
 // Get environment variables

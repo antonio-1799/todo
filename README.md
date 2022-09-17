@@ -10,16 +10,15 @@ This is a sample TODO REST API application that uses NodeJS, Express and Javascr
 
 ### Installation
 
-
 ```
 $ Clone the project
 $ Execute "npm i/npm install to get node modules"
-$ Run "npm start" or "node index.js"
+$ Run "npm start" or "node app.js"
 ```
 
 ## Deployment
 
-* Local Deployment - npm start / node index.js
+* Local Deployment - npm start / node app.js
 
 ### Branches
 
