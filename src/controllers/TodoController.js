@@ -1,11 +1,11 @@
-import Todos from "../models/todos.js";
+import Todos from "../models/TodoModel.js";
 import Validator from "validatorjs";
 import {Op} from "sequelize";
-import {StatusCodes} from "../../common/enums.js";
+import {StatusCodes} from "../common/enums.js";
 import {format} from "date-fns";
-import {DEFAULT_LIMIT, DEFAULT_PAGE} from "../../common/constants.js";
-import {ApiResponse} from "../../common/response.js";
-import pagination from "../helpers/pagination.js";
+import {DEFAULT_LIMIT, DEFAULT_PAGE} from "../common/constants.js";
+import {ApiResponse} from "../utils/response.js";
+import pagination from "../utils/pagination.js";
 import { v4 as uuidv4 } from 'uuid';
 import _ from "underscore"
 
@@ -39,7 +39,7 @@ export const createTodos = async (req, res) => {
         }
         return response.success(res, `Todo created successfully with id ${todo.id}`, data, StatusCodes.CREATED)
     } catch (err) {
-        return response.error(res, err)
+        return response.error(res, err.message)
     }
 }
 
@@ -60,20 +60,24 @@ export const readTodos = async (req, res) => {
                 },
             }
         })
+        // Early return when no todos found
+        if (todosCount === 0) return response.successWithPagination(res, 0, page, [])
         const { maxPage, offset } = await pagination(todosCount, limit, page)
 
         let todos
         if (!search) {
-            console.log('Return all applications')
             todos = await Todos.findAll({
-                attributes: ['id', 'name', 'description', 'remarks'],
+                attributes: {
+                    exclude: ['updatedAt']
+                },
                 offset,
                 limit
             })
         } else {
-            console.log('Return all applications with optional search')
             todos = await Todos.findAll({
-                attributes: ['id', 'name', 'description', 'remarks'],
+                attributes: {
+                    exclude: ['updatedAt']
+                },
                 where: {
                     name: {
                         [Op.like]: `%${search}%`
@@ -84,9 +88,20 @@ export const readTodos = async (req, res) => {
             })
         }
 
-        return response.successWithPagination(res, maxPage, page, todos)
+        const data = todos.map((todo) => {
+            return {
+                id: todo.id,
+                name: todo.name,
+                description: todo.description,
+                remarks: todo.remarks,
+                completedAt: todo.completedAt ? format(todo.completedAt, 'yyyy-MM-dd HH:mm:ss') : null,
+                createdAt: format(todo.createdAt, 'yyyy-MM-dd HH:mm:ss')
+            }
+        })
+
+        return response.successWithPagination(res, maxPage, page, data)
     } catch (err) {
-        return response.error(res, err)
+        return response.error(res, err.message)
     }
 }
 
@@ -101,15 +116,15 @@ export const readTodo = async (req, res) => {
             id: todo.id,
             name: todo.name,
             description: todo.description,
-            completedAt: format(todo.completedAt, 'yyyy-MM-dd HH:mm:ss'),
             remarks: todo.remarks,
+            completedAt: todo.completedAt ? format(todo.completedAt, 'yyyy-MM-dd HH:mm:ss') : null,
             createdAt: format(todo.createdAt, 'yyyy-MM-dd HH:mm:ss'),
             updatedAt: format(todo.updatedAt, 'yyyy-MM-dd HH:mm:ss')
         }
 
         return response.success(res, `Todo ${todo.id}`, data)
     } catch (err) {
-        return response.error(res, err)
+        return response.error(res, err.message)
     }
 }
 
@@ -149,7 +164,7 @@ export const updateTodo = async (req, res) => {
 
         return response.success(res, `Todo updated successfully with id ${todo.id}`, data)
     } catch (err) {
-        return response.error(res, err)
+        return response.error(res, err.message)
     }
 }
 
@@ -168,7 +183,7 @@ export const deleteTodo = async (req, res) => {
 
         return response.success(res, `Todo deleted successfully with id ${req.params.id}`)
     } catch (err) {
-        return response.error(res, err)
+        return response.error(res, err.message)
     }
 }
 
@@ -183,9 +198,15 @@ export const completeTodo = async (req, res) => {
         todo.completedAt = new Date()
         await todo.save()
 
-        return response.success(res, `Todo completed successfully with id ${req.params.id}`)
+        const data = {
+            id: todo.id,
+            completedAt: todo.completedAt ? format(todo.completedAt, 'yyyy-MM-dd HH:mm:ss') : null,
+            updatedAt: format(todo.updatedAt, 'yyyy-MM-dd HH:mm:ss')
+        }
+
+        return response.success(res, `Todo completed successfully with id ${req.params.id}`, data)
     } catch (err) {
-        return response.error(res, err)
+        return response.error(res, err.message)
     }
 }
 

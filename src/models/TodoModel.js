@@ -1,5 +1,5 @@
 import {DataTypes} from "sequelize";
-import db from "../../config/db.js";
+import db from "../libs/db.js";
 
 const Todos = db.define('todos', {
     id: {
@@ -27,6 +27,20 @@ const Todos = db.define('todos', {
     },
 },{
     underscored: true,
+    indexes: [
+        {
+            unique: true,
+            fields: ['id']
+        },
+        {
+            unique: false,
+            fields: ['name']
+        },
+        {
+            unique: false,
+            fields: ['completed_at']
+        }
+    ],
     tableName: 'todos',
     modelName: 'Todos',
     timestamps: true

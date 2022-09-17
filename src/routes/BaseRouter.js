@@ -1,10 +1,10 @@
 import express from "express";
-import todosRoutes from "./todos-routes.js";
+import todosRoutes from "./TodoRouter.js";
 
-// Init express router
+// Create base router
 const baseRouter = express.Router()
 
-// Define routers
+// Define specific routers
 baseRouter.use('/todos', todosRoutes)
 
 export default baseRouter

@@ -1,4 +1,4 @@
-import {StatusCodes} from "./enums.js";
+import {StatusCodes} from "../common/enums.js";
 
 export class ApiResponse {
     async success(res, message, data = null, statusCode = StatusCodes.OK) {
