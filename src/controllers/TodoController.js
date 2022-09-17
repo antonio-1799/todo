@@ -39,7 +39,7 @@ export const createTodos = async (req, res) => {
         }
         return response.success(res, `Todo created successfully with id ${todo.id}`, data, StatusCodes.CREATED)
     } catch (err) {
-        return response.error(res, err)
+        return response.error(res, err.message)
     }
 }
 
@@ -164,7 +164,7 @@ export const updateTodo = async (req, res) => {
 
         return response.success(res, `Todo updated successfully with id ${todo.id}`, data)
     } catch (err) {
-        return response.error(res, err)
+        return response.error(res, err.message)
     }
 }
 
@@ -183,7 +183,7 @@ export const deleteTodo = async (req, res) => {
 
         return response.success(res, `Todo deleted successfully with id ${req.params.id}`)
     } catch (err) {
-        return response.error(res, err)
+        return response.error(res, err.message)
     }
 }
 
@@ -206,7 +206,7 @@ export const completeTodo = async (req, res) => {
 
         return response.success(res, `Todo completed successfully with id ${req.params.id}`, data)
     } catch (err) {
-        return response.error(res, err)
+        return response.error(res, err.message)
     }
 }
 
