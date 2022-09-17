@@ -10,11 +10,11 @@ import {
 // Init express router
 const router = express.Router()
 
-// Define routers
-router.post('/todos', createTodos)
-router.get('/todos', readTodos)
-router.get('/todos/:id', readTodo)
-router.put('/todos/:id', updateTodo)
-router.delete('/todos/:id', deleteTodo)
+// Define todos routers
+router.post('/', createTodos)
+router.get('/', readTodos)
+router.get('/:id', readTodo)
+router.put('/:id', updateTodo)
+router.delete('/:id', deleteTodo)
 
 export default router
