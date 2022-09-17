@@ -1,19 +1,22 @@
-import Todos from "../models/todos-model.js";
+import Todos from "../models/todos.js";
 import Validator from "validatorjs";
 import {Op} from "sequelize";
-import {StatusCodes, TodosStatus} from "../../common/enums.js";
+import {StatusCodes} from "../../common/enums.js";
 import {format} from "date-fns";
 import {DEFAULT_LIMIT, DEFAULT_PAGE} from "../../common/constants.js";
 import {ApiResponse} from "../../common/response.js";
 import pagination from "../helpers/pagination.js";
+import { v4 as uuidv4 } from 'uuid';
+import _ from "underscore"
 
 const response = new ApiResponse()
 
 export const createTodos = async (req, res) => {
     try {
         const validation = new Validator(req.body, {
-            name: ['required', 'max:10'],
-            description: ['required', 'max:25']
+            name: ['required', 'string', 'max:20'],
+            description: ['required', 'string', 'max:50'],
+            remarks: ['required', 'string', 'max:50']
         })
 
         if (validation.fails()) {
@@ -23,11 +26,15 @@ export const createTodos = async (req, res) => {
             return response.error(res, errors, details, StatusCodes.UNPROCESSABLE_ENTITY)
         }
 
+        // Add uuid in body for primary key
+        _.extend(req.body, { id: uuidv4() })
+
         const todo = await Todos.create(req.body);
         const data = {
             id: todo.id,
             name: todo.name,
             description: todo.description,
+            remarks: todo.remarks,
             createdAt: format(todo.createdAt, 'yyyy-MM-dd HH:mm:ss')
         }
         return response.success(res, `Todo created successfully with id ${todo.id}`, data, StatusCodes.CREATED)
@@ -45,12 +52,12 @@ export const readTodos = async (req, res) => {
         page = isNaN(Number(req.query.page)) ? DEFAULT_PAGE : Number(req.query.page)
         limit = isNaN(Number(req.query.limit)) ? DEFAULT_LIMIT : Number(req.query.limit)
 
+        // Get max page and offset for pagination
         const todosCount = await Todos.count({
             where: {
                 name: {
                     [Op.like]: `%${search}%`
                 },
-                status: TodosStatus.ACTIVE
             }
         })
         const { maxPage, offset } = await pagination(todosCount, limit, page)
@@ -59,20 +66,18 @@ export const readTodos = async (req, res) => {
         if (!search) {
             console.log('Return all applications')
             todos = await Todos.findAll({
-                where: {
-                    status: TodosStatus.ACTIVE
-                },
+                attributes: ['id', 'name', 'description', 'remarks'],
                 offset,
                 limit
             })
         } else {
             console.log('Return all applications with optional search')
             todos = await Todos.findAll({
+                attributes: ['id', 'name', 'description', 'remarks'],
                 where: {
                     name: {
                         [Op.like]: `%${search}%`
                     },
-                    status: TodosStatus.ACTIVE
                 },
                 offset,
                 limit
@@ -92,7 +97,17 @@ export const readTodo = async (req, res) => {
             return response.error(res, 'Not Found', `No todo found for id ${req.params.id}`, StatusCodes.NOT_FOUND)
         }
 
-        return response.success(res, `Todo ${todo.id}`, todo)
+        const data = {
+            id: todo.id,
+            name: todo.name,
+            description: todo.description,
+            completedAt: format(todo.completedAt, 'yyyy-MM-dd HH:mm:ss'),
+            remarks: todo.remarks,
+            createdAt: format(todo.createdAt, 'yyyy-MM-dd HH:mm:ss'),
+            updatedAt: format(todo.updatedAt, 'yyyy-MM-dd HH:mm:ss')
+        }
+
+        return response.success(res, `Todo ${todo.id}`, data)
     } catch (err) {
         return response.error(res, err)
     }
@@ -101,8 +116,9 @@ export const readTodo = async (req, res) => {
 export const updateTodo = async (req, res) => {
     try {
         const validation = new Validator(req.body, {
-            name: ['required', 'string', 'max:10'],
-            description: ['required', 'string', 'max:25']
+            name: ['required', 'string', 'max:20'],
+            description: ['required', 'string', 'max:50'],
+            remarks: ['required', 'string', 'max:50']
         })
 
         if (validation.fails()) {
@@ -120,12 +136,14 @@ export const updateTodo = async (req, res) => {
         // Update name and description
         todo.name = req.body.name
         todo.description = req.body.description
+        todo.remarks = req.body.remarks
         await todo.save()
 
         const data = {
             id: todo.id,
             name: todo.name,
             description: todo.description,
+            remarks: todo.remarks,
             updatedAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss')
         }
 
@@ -149,6 +167,23 @@ export const deleteTodo = async (req, res) => {
         })
 
         return response.success(res, `Todo deleted successfully with id ${req.params.id}`)
+    } catch (err) {
+        return response.error(res, err)
+    }
+}
+
+export const completeTodo = async (req, res) => {
+    try {
+        const todo = await Todos.findByPk(req.params.id)
+        if (!todo) {
+            return response.error(res, 'Not Found', `No todo found for id ${req.params.id}`, StatusCodes.NOT_FOUND)
+        }
+        if (todo.completedAt) return response.error(res, 'Conflict', `Todo ${todo.id} already completed`, StatusCodes.CONFLICT)
+
+        todo.completedAt = new Date()
+        await todo.save()
+
+        return response.success(res, `Todo completed successfully with id ${req.params.id}`)
     } catch (err) {
         return response.error(res, err)
     }
