@@ -1,5 +1,5 @@
 {
-  "name": "union-digital-exam",
+  "name": "todo-app",
   "version": "1.0.0",
   "description": "TODO application list",
   "main": "src/app.js",
@@ -16,6 +16,9 @@
   "author": "Antonio Aradaza",
   "license": "ISC",
   "type": "module",
+  "engines": {
+    "node": "14.9"
+  },
   "dependencies": {
     "cors": "^2.8.5",
     "date-fns": "^2.29.3",
