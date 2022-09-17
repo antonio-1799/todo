@@ -16,6 +16,9 @@ app.use(cors());
 try {
     await db.authenticate();
     console.log('Connection has been established successfully.');
+
+    await db.sync()
+    console.log('Syncing database models')
 } catch (error) {
     console.error('Unable to connect to the database:', error);
 }
