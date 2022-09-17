@@ -1,8 +1,3 @@
-export const TodosStatus = {
-    ACTIVE: 'ACTIVE',
-    DEACTIVATED: 'DEACTIVATED'
-}
-
 export const StatusCodes = {
     OK: 200,
     CREATED: 201,

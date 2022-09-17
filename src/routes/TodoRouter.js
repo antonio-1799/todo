@@ -6,9 +6,8 @@ import {
     readTodo,
     readTodos,
     updateTodo
-} from "../controllers/todos-controller.js";
+} from "../controllers/TodoController.js";
 
-// Init express router
 const router = express.Router()
 
 // Define todos routers

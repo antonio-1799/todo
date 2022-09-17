@@ -1,12 +1,9 @@
-// Import express
 import express from "express";
 import cors from "cors";
-import db from "../config/db.js";
-import router from "./routes/todos-routes.js";
+import db from "./src/libs/db.js";
 import * as dotenv from 'dotenv'
-import baseRouter from "./routes/base-route.js";
+import baseRouter from "./src/routes/BaseRouter.js";
 
-// Get environment variables
 dotenv.config()
 
 const app = express();
@@ -20,7 +17,7 @@ try {
     await db.sync()
     console.log('Syncing database models')
 } catch (error) {
-    console.error('Unable to connect to the database:', error);
+    console.error('Unable to connect to the database:', error.message);
 }
 
 app.use(process.env.PREFIX || '/v1/api', baseRouter);
