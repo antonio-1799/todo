@@ -16,7 +16,7 @@ const response = new ApiResponse()
 export const createTodos = async (req, res) => {
     try {
         const user = await getAuthorizedUser(req)
-        if (!user) return response.error(res, 'Not Found', 'User not found', StatusCodes.NOT_FOUND)
+        if (!user) return response.error(res, 'Unauthorized', 'Unauthorized', StatusCodes.UNAUTHORIZED)
 
         const validation = new Validator(req.body, {
             name: ['required', 'string', 'max:20'],
@@ -53,7 +53,7 @@ export const createTodos = async (req, res) => {
 export const readTodos = async (req, res) => {
     try {
         const user = await getAuthorizedUser(req)
-        if (!user) return response.error(res, 'Not Found', 'User not found', StatusCodes.NOT_FOUND)
+        if (!user) return response.error(res, 'Unauthorized', 'Unauthorized', StatusCodes.UNAUTHORIZED)
 
         const search = req.query.search ?? ''
         let page, limit
@@ -125,7 +125,7 @@ export const readTodos = async (req, res) => {
 export const readTodo = async (req, res) => {
     try {
         const user = await getAuthorizedUser(req)
-        if (!user) return response.error(res, 'Not Found', 'User not found', StatusCodes.NOT_FOUND)
+        if (!user) return response.error(res, 'Unauthorized', 'Unauthorized', StatusCodes.UNAUTHORIZED)
 
         const todo = await Todos.findOne({
             where: {
@@ -157,7 +157,7 @@ export const readTodo = async (req, res) => {
 export const updateTodo = async (req, res) => {
     try {
         const user = await getAuthorizedUser(req)
-        if (!user) return response.error(res, 'Not Found', 'User not found', StatusCodes.NOT_FOUND)
+        if (!user) return response.error(res, 'Unauthorized', 'Unauthorized', StatusCodes.UNAUTHORIZED)
 
         const validation = new Validator(req.body, {
             name: ['required', 'string', 'max:20'],
@@ -205,7 +205,7 @@ export const updateTodo = async (req, res) => {
 export const deleteTodo = async (req, res) => {
     try {
         const user = await getAuthorizedUser(req)
-        if (!user) return response.error(res, 'Not Found', 'User not found', StatusCodes.NOT_FOUND)
+        if (!user) return response.error(res, 'Unauthorized', 'Unauthorized', StatusCodes.UNAUTHORIZED)
 
         const todo = await Todos.findOne({
             where: {
@@ -233,7 +233,7 @@ export const deleteTodo = async (req, res) => {
 export const completeTodo = async (req, res) => {
     try {
         const user = await getAuthorizedUser(req)
-        if (!user) return response.error(res, 'Not Found', 'User not found', StatusCodes.NOT_FOUND)
+        if (!user) return response.error(res, 'Unauthorized', 'Unauthorized', StatusCodes.UNAUTHORIZED)
 
         const validation = new Validator(req.body, {
             completedAt: ['required', 'date'],
