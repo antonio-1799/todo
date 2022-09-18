@@ -9,6 +9,7 @@ import pagination from "../utils/pagination.js";
 import { v4 as uuidv4 } from 'uuid';
 import _ from "underscore"
 import getAuthorizedUser from "../utils/getAuthorizedUser.js";
+import validateDateFormat from "../utils/validateDateFormat.js";
 
 const response = new ApiResponse()
 
@@ -30,7 +31,7 @@ export const createTodos = async (req, res) => {
             return response.error(res, errors, details, StatusCodes.UNPROCESSABLE_ENTITY)
         }
 
-        // Add uuid in body for primary key
+        // Add uuid for primary key and user id for foreign key in body
         _.extend(req.body, { id: uuidv4(), userId: user.id })
 
         const todo = await Todos.create(req.body);
@@ -42,6 +43,7 @@ export const createTodos = async (req, res) => {
             remarks: todo.remarks,
             createdAt: format(todo.createdAt, 'yyyy-MM-dd HH:mm:ss')
         }
+
         return response.success(res, `Todo created successfully with name ${todo.name}`, data, StatusCodes.CREATED)
     } catch (err) {
         return response.error(res, err.message)
@@ -71,8 +73,9 @@ export const readTodos = async (req, res) => {
         })
         // Early return when no todos found
         if (todosCount === 0) return response.successWithPagination(res, 0, page, [])
-        const { maxPage, offset } = await pagination(todosCount, limit, page)
 
+        // Paginate to get offset and maxPage
+        const { maxPage, offset } = await pagination(todosCount, limit, page)
         let todos
         if (!search) {
             todos = await Todos.findAll({
@@ -130,7 +133,6 @@ export const readTodo = async (req, res) => {
                 userId: user.id
             }
         })
-
         if (!todo) {
             return response.error(res, 'Not Found', `No todo found for id ${req.params.id}`, StatusCodes.NOT_FOUND)
         }
@@ -242,6 +244,9 @@ export const completeTodo = async (req, res) => {
 
             return response.error(res, errors, details, StatusCodes.UNPROCESSABLE_ENTITY)
         }
+
+        if (!await validateDateFormat(req.body.completedAt))
+            return response.error(res, 'Bad Request', `Date format should be yyyy-MM-dd HH:mm:ss`, StatusCodes.BAD_REQUEST)
 
         const todo = await Todos.findOne({
             where: {
