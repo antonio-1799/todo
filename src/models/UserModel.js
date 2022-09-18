@@ -8,12 +8,10 @@ const Users = db.define('users', {
         type: DataTypes.UUID,
         primaryKey: true,
         allowNull: false,
-        unique: true
     },
     username: {
         type: DataTypes.STRING(255),
         allowNull: false,
-        unique: true
     },
     password: {
         type: DataTypes.STRING(255),
@@ -33,6 +31,16 @@ const Users = db.define('users', {
             attributes.password = attributes.password && attributes.password !== '' ? bcrypt.hashSync(attributes.password, PASSWORD_SALT) : ''
         }
     },
+    indexes: [
+        {
+            unique: true,
+            fields: ['id']
+        },
+        {
+            unique: false,
+            fields: ['username']
+        },
+    ],
     underscored: true,
     tableName: 'users',
     modelName: 'Users',
