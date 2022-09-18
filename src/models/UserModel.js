@@ -1,18 +1,17 @@
 import {DataTypes} from "sequelize";
 import db from "../libs/db.js";
 import bcrypt from "bcrypt"
+import {PASSWORD_SALT} from "../common/constants.js";
 
 const Users = db.define('users', {
     id: {
         type: DataTypes.UUID,
         primaryKey: true,
         allowNull: false,
-        unique: true
     },
     username: {
         type: DataTypes.STRING(255),
         allowNull: false,
-        unique: true
     },
     password: {
         type: DataTypes.STRING(255),
@@ -29,9 +28,19 @@ const Users = db.define('users', {
 },{
     hooks: {
         beforeCreate(attributes) {
-            attributes.password = attributes.password && attributes.password !== '' ? bcrypt.hashSync(attributes.password, 8) : ''
+            attributes.password = attributes.password && attributes.password !== '' ? bcrypt.hashSync(attributes.password, PASSWORD_SALT) : ''
         }
     },
+    indexes: [
+        {
+            unique: true,
+            fields: ['id']
+        },
+        {
+            unique: false,
+            fields: ['username']
+        },
+    ],
     underscored: true,
     tableName: 'users',
     modelName: 'Users',

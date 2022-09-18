@@ -7,7 +7,6 @@ const Todos = db.define('todos', {
         type: DataTypes.UUID,
         primaryKey: true,
         allowNull: false,
-        unique: true
     },
     userId: {
         type: DataTypes.UUID,
@@ -20,7 +19,6 @@ const Todos = db.define('todos', {
     name: {
         type: DataTypes.STRING(255),
         allowNull: false,
-        unique: false
     },
     description: {
         type: DataTypes.STRING(255),
@@ -28,7 +26,6 @@ const Todos = db.define('todos', {
     },
     completedAt: {
         type: DataTypes.DATE,
-        unique: false
     },
     remarks: DataTypes.STRING(255),
     createdAt: {
@@ -40,7 +37,6 @@ const Todos = db.define('todos', {
         allowNull: false
     },
 },{
-    underscored: true,
     indexes: [
         {
             unique: true,
@@ -55,6 +51,7 @@ const Todos = db.define('todos', {
             fields: ['completed_at']
         }
     ],
+    underscored: true,
     tableName: 'todos',
     modelName: 'Todos',
     timestamps: true
