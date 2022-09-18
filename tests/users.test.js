@@ -15,7 +15,8 @@ const user = {
     password: 'password123'
 }
 
-describe('Create User and Login', () => {
+describe('Create User, Login and Logout', () => {
+    let token
     it('Should create a new user', async () => {
         const res = await supertest(app)
             .post(`${prefix}/users`)
@@ -30,10 +31,21 @@ describe('Create User and Login', () => {
         const res = await supertest(app)
             .post(`${prefix}/users/login`)
             .send(user)
+        token = res.body.data.access_token
 
         expect(res.statusCode).toEqual(200)
         expect(res.body).toHaveProperty('message')
         expect(res.body).toHaveProperty('data')
         expect(res.body.data).toHaveProperty('access_token')
+    })
+
+    it('Should be able to logout', async () => {
+        const res = await supertest(app)
+            .post(`${prefix}/users/logout`)
+            .set('Authorization', `Bearer ${token}`)
+
+        expect(res.statusCode).toEqual(200)
+        expect(res.body).toHaveProperty('message')
+        expect(res.body).toHaveProperty('data')
     })
 })
