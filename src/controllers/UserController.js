@@ -8,6 +8,8 @@ import Users from "../models/UserModel.js";
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import {SECRET_KEY} from "../common/constants.js";
+import {getTokenFromBearer} from "express-kun";
+import RevokedTokens from "../models/RevokedTokenModel.js";
 
 const response = new ApiResponse()
 
@@ -84,6 +86,27 @@ export const login = async (req, res) => {
         }
 
         return response.success(res, `Login successful`, data, StatusCodes.OK)
+    } catch (err) {
+        return response.error(res, err.message)
+    }
+}
+
+export const logout = async (req, res) => {
+    try {
+        const token = getTokenFromBearer(req)
+
+        const [revokedToken, created] = await RevokedTokens.findOrCreate({
+            where: {
+                token
+            },
+            defaults: {
+                id: uuidv4(),
+                token
+            }
+        })
+        if (!created) return response.error(res, 'Unauthorized', 'Unauthorized', StatusCodes.UNAUTHORIZED)
+
+        return response.success(res, `User logout successfully`, null, StatusCodes.OK)
     } catch (err) {
         return response.error(res, err.message)
     }
