@@ -25,6 +25,14 @@ export const createUser = async (req, res) => {
             return response.error(res, errors, details, StatusCodes.UNPROCESSABLE_ENTITY)
         }
 
+        const existingUser = await Users.findOne({
+            where: {
+                username: req.body.username
+            }
+        })
+        if (existingUser) return response.error(res, 'Conflict',
+            'User already exist', StatusCodes.CONFLICT)
+
         // Add uuid in body for primary key
         _.extend(req.body, { id: uuidv4() })
 
@@ -61,7 +69,8 @@ export const login = async (req, res) => {
 
         if (!user) return response.error(res, 'Not Found', 'User not found', StatusCodes.NOT_FOUND)
         if (!bcrypt.compareSync(req.body.password, user.password))
-            return response.error(res, 'Unauthorized', 'Password incorrect. Please try again.', StatusCodes.UNAUTHORIZED)
+            return response.error(res, 'Unauthorized',
+                'Password incorrect. Please try again.', StatusCodes.UNAUTHORIZED)
 
         const token = jwt.sign({
             id: user.id,
