@@ -83,7 +83,7 @@ export const login = async (req, res) => {
             access_token: token
         }
 
-        return response.success(res, `Login successful`, data, StatusCodes.CREATED)
+        return response.success(res, `Login successful`, data, StatusCodes.OK)
     } catch (err) {
         return response.error(res, err.message)
     }
