@@ -2,17 +2,21 @@ import Todos from "../models/TodoModel.js";
 import Validator from "validatorjs";
 import {Op} from "sequelize";
 import {StatusCodes} from "../common/enums.js";
-import {format} from "date-fns";
+import {format, getUnixTime, parseISO} from "date-fns";
 import {DEFAULT_LIMIT, DEFAULT_PAGE} from "../common/constants.js";
 import {ApiResponse} from "../utils/response.js";
 import pagination from "../utils/pagination.js";
 import { v4 as uuidv4 } from 'uuid';
 import _ from "underscore"
+import getAuthorizedUser from "../utils/getAuthorizedUser.js";
 
 const response = new ApiResponse()
 
 export const createTodos = async (req, res) => {
     try {
+        const user = await getAuthorizedUser(req)
+        if (!user) return response.error(res, 'Not Found', 'User not found', StatusCodes.NOT_FOUND)
+
         const validation = new Validator(req.body, {
             name: ['required', 'string', 'max:20'],
             description: ['required', 'string', 'max:50'],
@@ -27,17 +31,18 @@ export const createTodos = async (req, res) => {
         }
 
         // Add uuid in body for primary key
-        _.extend(req.body, { id: uuidv4() })
+        _.extend(req.body, { id: uuidv4(), userId: user.id })
 
         const todo = await Todos.create(req.body);
         const data = {
             id: todo.id,
+            userId: todo.userId,
             name: todo.name,
             description: todo.description,
             remarks: todo.remarks,
             createdAt: format(todo.createdAt, 'yyyy-MM-dd HH:mm:ss')
         }
-        return response.success(res, `Todo created successfully with id ${todo.id}`, data, StatusCodes.CREATED)
+        return response.success(res, `Todo created successfully with name ${todo.name}`, data, StatusCodes.CREATED)
     } catch (err) {
         return response.error(res, err.message)
     }
@@ -45,6 +50,9 @@ export const createTodos = async (req, res) => {
 
 export const readTodos = async (req, res) => {
     try {
+        const user = await getAuthorizedUser(req)
+        if (!user) return response.error(res, 'Not Found', 'User not found', StatusCodes.NOT_FOUND)
+
         const search = req.query.search ?? ''
         let page, limit
 
@@ -55,6 +63,7 @@ export const readTodos = async (req, res) => {
         // Get max page and offset for pagination
         const todosCount = await Todos.count({
             where: {
+                userId: user.id,
                 name: {
                     [Op.like]: `%${search}%`
                 },
@@ -70,6 +79,9 @@ export const readTodos = async (req, res) => {
                 attributes: {
                     exclude: ['updatedAt']
                 },
+                where: {
+                    userId: user.id,
+                },
                 offset,
                 limit
             })
@@ -79,6 +91,7 @@ export const readTodos = async (req, res) => {
                     exclude: ['updatedAt']
                 },
                 where: {
+                    userId: user.id,
                     name: {
                         [Op.like]: `%${search}%`
                     },
@@ -91,6 +104,7 @@ export const readTodos = async (req, res) => {
         const data = todos.map((todo) => {
             return {
                 id: todo.id,
+                userId: todo.userId,
                 name: todo.name,
                 description: todo.description,
                 remarks: todo.remarks,
@@ -107,13 +121,23 @@ export const readTodos = async (req, res) => {
 
 export const readTodo = async (req, res) => {
     try {
-        const todo = await Todos.findByPk(req.params.id)
+        const user = await getAuthorizedUser(req)
+        if (!user) return response.error(res, 'Not Found', 'User not found', StatusCodes.NOT_FOUND)
+
+        const todo = await Todos.findOne({
+            where: {
+                id: req.params.id,
+                userId: user.id
+            }
+        })
+
         if (!todo) {
             return response.error(res, 'Not Found', `No todo found for id ${req.params.id}`, StatusCodes.NOT_FOUND)
         }
 
         const data = {
             id: todo.id,
+            userId: todo.userId,
             name: todo.name,
             description: todo.description,
             remarks: todo.remarks,
@@ -122,7 +146,7 @@ export const readTodo = async (req, res) => {
             updatedAt: format(todo.updatedAt, 'yyyy-MM-dd HH:mm:ss')
         }
 
-        return response.success(res, `Todo ${todo.id}`, data)
+        return response.success(res, `Todo ${todo.name}`, data)
     } catch (err) {
         return response.error(res, err.message)
     }
@@ -130,12 +154,14 @@ export const readTodo = async (req, res) => {
 
 export const updateTodo = async (req, res) => {
     try {
+        const user = await getAuthorizedUser(req)
+        if (!user) return response.error(res, 'Not Found', 'User not found', StatusCodes.NOT_FOUND)
+
         const validation = new Validator(req.body, {
             name: ['required', 'string', 'max:20'],
             description: ['required', 'string', 'max:50'],
             remarks: ['required', 'string', 'max:50']
         })
-
         if (validation.fails()) {
             let errors = validation.errors.all()
             let details = errors[Object.keys(errors)[0]][0]
@@ -143,7 +169,12 @@ export const updateTodo = async (req, res) => {
             return response.error(res, errors, details, StatusCodes.UNPROCESSABLE_ENTITY)
         }
 
-        const todo = await Todos.findByPk(req.params.id)
+        const todo = await Todos.findOne({
+            where: {
+                id: req.params.id,
+                userId: user.id
+            }
+        })
         if (!todo) {
             return response.error(res, 'Not Found', `No todo found for id ${req.params.id}`, StatusCodes.NOT_FOUND)
         }
@@ -156,13 +187,14 @@ export const updateTodo = async (req, res) => {
 
         const data = {
             id: todo.id,
+            userId: todo.userId,
             name: todo.name,
             description: todo.description,
             remarks: todo.remarks,
             updatedAt: format(new Date(), 'yyyy-MM-dd HH:mm:ss')
         }
 
-        return response.success(res, `Todo updated successfully with id ${todo.id}`, data)
+        return response.success(res, `Todo updated successfully with name ${todo.name}`, data)
     } catch (err) {
         return response.error(res, err.message)
     }
@@ -170,14 +202,23 @@ export const updateTodo = async (req, res) => {
 
 export const deleteTodo = async (req, res) => {
     try {
-        const todo = await Todos.findByPk(req.params.id)
+        const user = await getAuthorizedUser(req)
+        if (!user) return response.error(res, 'Not Found', 'User not found', StatusCodes.NOT_FOUND)
+
+        const todo = await Todos.findOne({
+            where: {
+                id: req.params.id,
+                userId: user.id
+            }
+        })
         if (!todo) {
             return response.error(res, 'Not Found', `No todo found for id ${req.params.id}`, StatusCodes.NOT_FOUND)
         }
 
         await Todos.destroy({
             where: {
-                id: req.params.id
+                id: req.params.id,
+                userId: user.id
             }
         })
 
@@ -189,13 +230,45 @@ export const deleteTodo = async (req, res) => {
 
 export const completeTodo = async (req, res) => {
     try {
-        const todo = await Todos.findByPk(req.params.id)
+        const user = await getAuthorizedUser(req)
+        if (!user) return response.error(res, 'Not Found', 'User not found', StatusCodes.NOT_FOUND)
+
+        const validation = new Validator(req.body, {
+            completedAt: ['required', 'date'],
+        })
+        if (validation.fails()) {
+            let errors = validation.errors.all()
+            let details = errors[Object.keys(errors)[0]][0]
+
+            return response.error(res, errors, details, StatusCodes.UNPROCESSABLE_ENTITY)
+        }
+
+        const todo = await Todos.findOne({
+            where: {
+                id: req.params.id,
+                userId: user.id
+            }
+        })
         if (!todo) {
             return response.error(res, 'Not Found', `No todo found for id ${req.params.id}`, StatusCodes.NOT_FOUND)
         }
         if (todo.completedAt) return response.error(res, 'Conflict', `Todo ${todo.id} already completed`, StatusCodes.CONFLICT)
 
-        todo.completedAt = new Date()
+        // Completed at should be greater than that its created date
+        const completedAtDate = parseISO(req.body.completedAt)
+
+        const dateUnix = getUnixTime(completedAtDate)
+        const createdAtUnix = getUnixTime(todo.createdAt)
+        if (createdAtUnix > dateUnix)
+            return response.error(res, 'Bad Request',
+                `Completed at date should be greater than todo created date`, StatusCodes.BAD_REQUEST)
+
+        const dateNowUnix = getUnixTime(new Date())
+        if (dateUnix > dateNowUnix)
+            return response.error(res, 'Bad Request',
+                `Completed at date should be less than date today`, StatusCodes.BAD_REQUEST)
+
+        todo.completedAt = completedAtDate
         await todo.save()
 
         const data = {
