@@ -7,12 +7,13 @@ import {
     updateTodo
 } from "../controllers/TodoController.js";
 import express from "express";
-import createProtectedRouter from "../utils/createProtectedRouter.js";
+import {withJWTAuthMiddleware} from "express-kun";
+import {SECRET_KEY} from "../common/constants.js";
 
 const router = express.Router()
-const protectedRouter = await createProtectedRouter(router)
+const protectedRouter = withJWTAuthMiddleware(router, SECRET_KEY)
 
-// Define todos routers
+// Define protected todos routers
 protectedRouter.post('/', createTodos)
 protectedRouter.get('/', readTodos)
 protectedRouter.get('/:id', readTodo)

@@ -1,25 +1,51 @@
-const request = require('supertest')
-const dotenv = require('dotenv')
+import * as dotenv from "dotenv";
+import supertest from "supertest";
+import app from "../src/app.js"
+import {format} from "date-fns";
+
 dotenv.config()
 
-const baseUrl = `${process.env.HOST}:${process.env.HOST_PORT}${process.env.PREFIX}` ?? 'localhost:5000/v1/api'
+const prefix = process.env.PREFIX ?? '/v1/api'
 const todo = {
     name: 'Test TODO',
     description: 'This is a description',
     remarks: 'This is a remark'
 }
-let newTodo
+let token
+
+const getToken = async () => {
+    const user = {
+        username: 'test user',
+        password: 'password123'
+    }
+    // Create user
+    await supertest(app)
+        .post(`${prefix}/users`)
+        .send(user)
+
+    // Login user and get access token
+    const loginResponse = await supertest(app)
+        .post(`${prefix}/users/login`)
+        .send(user)
+    return loginResponse.body.data.access_token
+}
 
 describe('Create TODO', () => {
     let newTodoId
+    beforeAll(async () => {
+        token = await getToken()
+    })
     afterAll(async () => {
-        await request(baseUrl).delete(`/todos/${newTodoId}`)
+        await supertest(app)
+            .delete(`${prefix}/todos/${newTodoId}`)
+            .set('Authorization', `Bearer ${token}`)
     })
 
     it('Should create a new TODO', async () => {
-        const res = await request(baseUrl)
-            .post('/todos')
+        const res = await supertest(app)
+            .post(`${prefix}/todos`)
             .send(todo)
+            .set('Authorization', `Bearer ${token}`)
 
         newTodoId = res.body.data.id
         expect(res.statusCode).toEqual(201)
@@ -28,17 +54,39 @@ describe('Create TODO', () => {
     })
 })
 
-describe('Get TODOS', () => {
+describe('Get All TODOS and Get TODO', () => {
+    let newTodoId
     beforeAll(async () => {
-        newTodo = await request(baseUrl).post('/todos').send(todo);
+        token = await getToken()
+
+        const todoResponse = await supertest(app)
+            .post(`${prefix}/todos`)
+            .send(todo)
+            .set('Authorization', `Bearer ${token}`)
+
+        newTodoId = todoResponse.body.data.id
     })
     afterAll(async () => {
-        await request(baseUrl).delete(`/todos/${newTodo.body.data.id}`)
+        await supertest(app)
+            .delete(`${prefix}/todos/${newTodoId}`)
+            .set('Authorization', `Bearer ${token}`)
+    })
+
+    it('Should get TODO', async () => {
+        const res = await supertest(app)
+            .get(`${prefix}/todos/${newTodoId}`)
+            .set('Authorization', `Bearer ${token}`)
+
+        expect(res.statusCode).toEqual(200)
+        expect(res.body).toHaveProperty('message')
+        expect(res.body).toHaveProperty('data')
     })
 
     it('Should get TODOs', async () => {
-        const res = await request(baseUrl)
-            .get('/todos')
+        const res = await supertest(app)
+            .get(`${prefix}/todos`)
+            .set('Authorization', `Bearer ${token}`)
+
         expect(res.statusCode).toEqual(200)
         expect(res.body).toHaveProperty('max_page')
         expect(res.body).toHaveProperty('current_page')
@@ -46,54 +94,58 @@ describe('Get TODOS', () => {
     })
 })
 
-describe('Get TODO', () => {
-    beforeAll(async () => {
-        newTodo = await request(baseUrl).post('/todos').send(todo);
-    })
-    afterAll(async () => {
-        await request(baseUrl).delete(`/todos/${newTodo.body.data.id}`)
-    })
-
-    it('Should get TODO', async () => {
-        const res = await request(baseUrl)
-            .get(`/todos/${newTodo.body.data.id}`)
-
-        expect(res.statusCode).toEqual(200)
-        expect(res.body).toHaveProperty('data')
-    })
-})
-
 describe('Update TODO', () => {
+    let newTodoId
     beforeAll(async () => {
-        newTodo = await request(baseUrl).post('/todos').send(todo);
+        token = await getToken()
+
+        const todoResponse = await supertest(app)
+            .post(`${prefix}/todos`)
+            .send(todo)
+            .set('Authorization', `Bearer ${token}`)
+
+        newTodoId = todoResponse.body.data.id
     })
     afterAll(async () => {
-        await request(baseUrl).delete(`/todos/${newTodo.body.data.id}`)
+        await supertest(app)
+            .delete(`${prefix}/todos/${newTodoId}`)
+            .set('Authorization', `Bearer ${token}`)
     })
 
     it('Should update TODO', async () => {
-        const res = await request(baseUrl)
-            .put(`/todos/${newTodo.body.data.id}`)
+        const res = await supertest(app)
+            .put(`${prefix}/todos/${newTodoId}`)
             .send({
                 name: 'Updated Todo',
                 description: 'Updated description',
                 remarks: 'Updated remarks'
             })
+            .set('Authorization', `Bearer ${token}`)
 
         expect(res.statusCode).toEqual(200)
         expect(res.body).toHaveProperty('message')
         expect(res.body).toHaveProperty('data')
+        expect(res.body.data).toHaveProperty('updatedAt')
     })
 })
 
 describe('Delete TODO', () => {
+    let newTodoId
     beforeAll(async () => {
-        newTodo = await request(baseUrl).post('/todos').send(todo);
+        token = await getToken()
+
+        const todoResponse = await supertest(app)
+            .post(`${prefix}/todos`)
+            .send(todo)
+            .set('Authorization', `Bearer ${token}`)
+
+        newTodoId = todoResponse.body.data.id
     })
 
     it('Should delete TODO', async () => {
-        const res = await request(baseUrl)
-            .delete(`/todos/${newTodo.body.data.id}`)
+        const res = await supertest(app)
+            .delete(`${prefix}/todos/${newTodoId}`)
+            .set('Authorization', `Bearer ${token}`)
 
         expect(res.statusCode).toEqual(200)
         expect(res.body).toHaveProperty('message')
@@ -101,18 +153,30 @@ describe('Delete TODO', () => {
 })
 
 describe('Complete TODO', () => {
+    let newTodoId
     beforeAll(async () => {
-        newTodo = await request(baseUrl).post('/todos').send(todo);
+        token = await getToken()
+
+        const todoResponse = await supertest(app)
+            .post(`${prefix}/todos`)
+            .send(todo)
+            .set('Authorization', `Bearer ${token}`)
+
+        newTodoId = todoResponse.body.data.id
     })
     afterAll(async () => {
-        await request(baseUrl).delete(`/todos/${newTodo.body.data.id}`)
+        await supertest(app)
+            .delete(`${prefix}/todos/${newTodoId}`)
+            .set('Authorization', `Bearer ${token}`)
     })
 
     it('Should complete TODO', async () => {
-        const res = await request(baseUrl)
-            .patch(`/todos/${newTodo.body.data.id}`)
+        const date = format(new Date(), 'yyyy-MM-dd HH:mm:ss')
+        const res = await supertest(app)
+            .put(`${prefix}/todos/${newTodoId}/complete`)
+            .send({ completedAt: date})
+            .set('Authorization', `Bearer ${token}`)
 
-        console.log(res.body)
         expect(res.statusCode).toEqual(200)
         expect(res.body).toHaveProperty('message')
         expect(res.body).toHaveProperty('data')
